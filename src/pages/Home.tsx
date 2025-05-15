@@ -490,18 +490,38 @@ const AlertMessage = styled.div<{ type: 'success' | 'error' }>`
     type === 'success' ? '#c8e6c9' : '#ffcdd2'};
 `;
 
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const CheckboxInput = styled.input`
+  margin-right: ${({ theme }) => theme.spacing.sm};
+  cursor: pointer;
+`;
+
+const CheckboxLabel = styled.label`
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+`;
+
 const Home: React.FC = () => {
   // emailJS 초기화
   useEffect(() => {
-    emailjs.init('dT2z6eMM2HM_EKVV9');
+    emailjs.init('OF6liipTs2XLAtY9E');
   }, []);
   
   // 폼 데이터 상태 관리
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    email: '',
+    childAge: '',
     program: '',
-    message: ''
+    message: '',
+    agreeTerm: false
   });
   
   // 폼 제출 상태 관리
@@ -531,19 +551,20 @@ const Home: React.FC = () => {
     
     try {
       // EmailJS 설정
-      const serviceId = 'service_littlz';  // EmailJS 서비스 ID
-      const templateId = 'template_consult'; // EmailJS 템플릿 ID
+      const serviceId = 'service_43f2pak';  // EmailJS 서비스 ID
+      const templateId = 'template_60orgdi'; // EmailJS 템플릿 ID
       
-      // 이메일 전송을 위한 추가 파라미터 설정
+      // 이메일 전송을 위한 템플릿 파라미터 설정
       const templateParams = {
-        to_email: 'sanghyun1201a@gmail.com',
-        from_name: formData.name,
+        name: formData.name,
         phone: formData.phone,
+        email: formData.email,
+        childAge: formData.childAge,
         program: formData.program,
         message: formData.message
       };
       
-      // EmailJS를 사용하여 이메일 전송 (이미 초기화된 publicKey 사용)
+      // EmailJS를 사용하여 이메일 전송
       const result = await emailjs.send(serviceId, templateId, templateParams);
       
       if (result.text === 'OK') {
@@ -558,8 +579,11 @@ const Home: React.FC = () => {
         setFormData({
           name: '',
           phone: '',
+          email: '',
+          childAge: '',
           program: '',
-          message: ''
+          message: '',
+          agreeTerm: false
         });
       }
     } catch (error) {
@@ -798,6 +822,30 @@ const Home: React.FC = () => {
                 placeholder="010-0000-0000" 
               />
             </FormGroup>
+
+            <FormGroup>
+              <FormLabel htmlFor="email">이메일</FormLabel>
+              <FormInput 
+                type="email" 
+                id="email" 
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="example@email.com" 
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <FormLabel htmlFor="childAge">아이 나이</FormLabel>
+              <FormInput 
+                type="text" 
+                id="childAge" 
+                name="childAge"
+                value={formData.childAge}
+                onChange={handleInputChange}
+                placeholder="예: 10세 / 초3" 
+              />
+            </FormGroup>
             
             <FormGroup>
               <FormLabel htmlFor="program">관심 프로그램</FormLabel>
@@ -824,6 +872,22 @@ const Home: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder="궁금하신 사항을 자유롭게 적어주세요"
               ></FormTextarea>
+            </FormGroup>
+
+            <FormGroup>
+              <CheckboxContainer>
+                <CheckboxInput
+                  type="checkbox"
+                  id="agreeTerm"
+                  name="agreeTerm"
+                  checked={formData.agreeTerm}
+                  onChange={(e) => setFormData(prev => ({ ...prev, agreeTerm: e.target.checked }))}
+                  required
+                />
+                <CheckboxLabel htmlFor="agreeTerm">
+                  개인정보 수집 및 이용에 동의합니다. *
+                </CheckboxLabel>
+              </CheckboxContainer>
             </FormGroup>
             
             <FormButton type="submit" disabled={isSubmitting}>

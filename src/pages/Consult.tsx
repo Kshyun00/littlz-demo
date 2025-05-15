@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
+import emailjs from '@emailjs/browser';
 
 const Consult: React.FC = () => {
+  const formRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
-    parentName: '',
-    childName: '',
-    childAge: '',
+    name: '',
     phone: '',
     email: '',
+    childAge: '',
     program: '',
     message: '',
     agreeTerm: false
   });
   
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // EmailJS 초기화
+    emailjs.init("OF6liipTs2XLAtY9E");
+  }, []);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -31,22 +39,47 @@ const Consult: React.FC = () => {
     }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 여기서 실제 API 호출을 통해 데이터를 서버로 전송할 수 있습니다.
-    console.log('상담 신청 데이터:', formData);
-    setFormSubmitted(true);
-    // 폼 초기화
-    setFormData({
-      parentName: '',
-      childName: '',
-      childAge: '',
-      phone: '',
-      email: '',
-      program: '',
-      message: '',
-      agreeTerm: false
-    });
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // EmailJS를 사용하여 이메일 전송
+      const templateParams = {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        childAge: formData.childAge,
+        program: formData.program,
+        message: formData.message
+      };
+      
+      await emailjs.send(
+        "service_43f2pak", 
+        "template_60orgdi", 
+        templateParams
+      );
+      
+      console.log('상담 신청 데이터:', formData);
+      setFormSubmitted(true);
+      
+      // 폼 초기화
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        childAge: '',
+        program: '',
+        message: '',
+        agreeTerm: false
+      });
+    } catch (error) {
+      console.error('이메일 전송 오류:', error);
+      setError('상담 신청 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,41 +159,17 @@ const Consult: React.FC = () => {
             ) : (
               <FormCard>
                 <FormTitle>상담 신청서</FormTitle>
-                <ConsultForm onSubmit={handleSubmit}>
+                {error && <ErrorMessage>{error}</ErrorMessage>}
+                <ConsultForm ref={formRef} onSubmit={handleSubmit}>
                   <FormGrid>
                     <FormGroup>
-                      <Label htmlFor="parentName">학부모 성함 *</Label>
+                      <Label htmlFor="name">이름 *</Label>
                       <Input
                         type="text"
-                        id="parentName"
-                        name="parentName"
-                        value={formData.parentName}
+                        id="name"
+                        name="name"
+                        value={formData.name}
                         onChange={handleChange}
-                        required
-                      />
-                    </FormGroup>
-                    
-                    <FormGroup>
-                      <Label htmlFor="childName">자녀 이름 *</Label>
-                      <Input
-                        type="text"
-                        id="childName"
-                        name="childName"
-                        value={formData.childName}
-                        onChange={handleChange}
-                        required
-                      />
-                    </FormGroup>
-                    
-                    <FormGroup>
-                      <Label htmlFor="childAge">자녀 연령/학년 *</Label>
-                      <Input
-                        type="text"
-                        id="childAge"
-                        name="childAge"
-                        value={formData.childAge}
-                        onChange={handleChange}
-                        placeholder="예: 10세 / 초3"
                         required
                       />
                     </FormGroup>
@@ -189,6 +198,19 @@ const Consult: React.FC = () => {
                         placeholder="example@email.com"
                       />
                     </FormGroup>
+
+                    <FormGroup>
+                      <Label htmlFor="childAge">아이 나이 *</Label>
+                      <Input
+                        type="text"
+                        id="childAge"
+                        name="childAge"
+                        value={formData.childAge}
+                        onChange={handleChange}
+                        placeholder="예: 10세 / 초3"
+                        required
+                      />
+                    </FormGroup>
                     
                     <FormGroup className="full-width">
                       <Label htmlFor="program">관심 프로그램</Label>
@@ -207,7 +229,7 @@ const Consult: React.FC = () => {
                     </FormGroup>
                     
                     <FormGroup className="full-width">
-                      <Label htmlFor="message">상담 내용</Label>
+                      <Label htmlFor="message">문의사항</Label>
                       <TextArea
                         id="message"
                         name="message"
@@ -235,7 +257,9 @@ const Consult: React.FC = () => {
                     </FormGroup>
                   </FormGrid>
                   
-                  <SubmitButton type="submit">상담 신청하기</SubmitButton>
+                  <SubmitButton type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? '전송 중...' : '상담 신청하기'}
+                  </SubmitButton>
                 </ConsultForm>
               </FormCard>
             )}
@@ -642,6 +666,16 @@ const AddressLabel = styled.h4`
 const AddressText = styled.p`
   color: ${({ theme }) => theme.colors.text};
   margin: 0;
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #fff0f0;
+  color: #e74c3c;
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.medium};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  border-left: 4px solid #e74c3c;
 `;
 
 export default Consult; 
